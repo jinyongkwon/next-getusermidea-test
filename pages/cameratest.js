@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button } from 'reactstrap';
+import React, {useEffect, useRef, useState} from 'react';
+import {Button, Nav, NavItem, NavLink} from 'reactstrap';
 
 const getWebcam = (callback) => {
     try {
@@ -16,43 +16,77 @@ const getWebcam = (callback) => {
 }
 
 const Styles = {
-    Video: { width: "100%", height: "100%", background: 'rgba(245, 240, 215, 0.5)' },
-    None: { display: 'none' },
+    Video: {
+        width: '30vw',
+        background: 'rgba(245, 240, 215, 0.5)',
+        border: '1px solid green',
+        zIndex: 1,
+        position: 'absolute'
+    },
+    Canvas: {
+        width: '30vw',
+        border: '1px solid green',
+        // background: 'rgba(245, 240, 215, 0.5)',
+        zIndex: 2,
+        position: 'absolute',
+        // background: `url(/img/rabbit.png)`
+    },
+    None: {display: 'none'},
 }
 
-function TestOverlay() {
-    const [playing, setPlaying] = React.useState(undefined);
+function WebcamCanvas() {
+    const [timer, setTimer] = useState(undefined);
 
-    const videoRef = React.useRef(null);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         getWebcam((stream => {
-            setPlaying(true);
             videoRef.current.srcObject = stream;
         }));
+        const t = setTimeout(() => drawToCanvas(),1000);
+        // const t = setInterval(() => drawToCanvas(), 0.01);
+        setTimer(t);
     }, []);
 
-    const startOrStop = () => {
-        if (playing) {
-            const s = videoRef.current.srcObject;
-            s.getTracks().forEach((track) => {
-                track.stop();
-            });
-        } else {
-            getWebcam((stream => {
-                setPlaying(true);
-                videoRef.current.srcObject = stream;
-            }));
+    const drawToCanvas = () => {
+        try {
+            const ctx = canvasRef.current.getContext('2d');
+
+            canvasRef.current.width = videoRef.current.videoWidth;
+            canvasRef.current.height = videoRef.current.videoHeight;
+
+            if (ctx) {
+                if (videoRef.current) {
+                    ctx.translate(canvasRef.current.width, 0);
+                    ctx.scale(-1, 1);
+                    // ctx.drawImage("../pages/img/rabbit.png", 0, 0,canvasRef.current.width, canvasRef.current.height);
+                    // ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                }
+                // ctx.fillStyle = "white ";
+                // ctx.fillRect(10, 10, 100, 50);
+                ctx.font = "15px Arial";
+                ctx.fillStyle = "green";
+                ctx.fillText("권진용", 15, 30);
+                const background = new Image()
+                background.src = "rabbit.png"
+                background.onload = function () {
+                    ctx.drawImage(background, 0, 0, canvasRef.current.width, canvasRef.current.height);
+                }
+            }
+        } catch (err) {
+            console.log(err);
         }
-        setPlaying(!playing);
     }
 
     return (<>
-        <div style={{ width: '100vw', height: '100vh', padding: '3em' }}>
-            <video ref={videoRef} autoPlay style={Styles.Video} />
-            <Button color="warning" onClick={() => startOrStop()}>{playing ? 'Stop' : 'Start'} </Button>
-        </div >
+        <div style={{width: '100vw', height: '100vh', padding: '3em'}}>
+            <video ref={videoRef} autoPlay style={Styles.Video}/>
+            <canvas ref={canvasRef} style={Styles.Canvas}/>
+        </div>
+        <hr/>
     </>);
 }
 
-export default TestOverlay;
+export default WebcamCanvas;
